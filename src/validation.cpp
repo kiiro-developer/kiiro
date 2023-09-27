@@ -61,6 +61,7 @@
 #include "elysium/elysium.h"
 #endif
 
+#include "masternode-collaterals.h"
 #include "masternode-payments.h"
 
 #include "evo/specialtx.h"
@@ -1755,9 +1756,10 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params &consensusParams, i
 CAmount GetMasternodePayment(int nHeight, int nTime, CAmount blockValue)
 {
     const Consensus::Params &params = Params().GetConsensus();
-    if (nTime >= params.stage3StartTime)
-        return blockValue*params.stage3MasternodeShare/100;
-    else if (nHeight >= params.nSubsidyHalvingFirst)
+    if (nTime >= params.stage3StartTime) {
+        CMasternodeCollaterals collaterals = params.nCollaterals;
+        return blockValue*collaterals.getRewardPercentage(nHeight)/100;
+    } else if (nHeight >= params.nSubsidyHalvingFirst)
         return blockValue*params.stage2ZnodeShare/100;
     else
         return blockValue*3/10; // 30%
@@ -4586,20 +4588,22 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, const Co
     if (nHeight >= consensusParams.nSubsidyHalvingFirst) {
         if (nHeight < consensusParams.nSubsidyHalvingSecond) {
             if (block.nTime >= consensusParams.stage3StartTime) {
-                CScript devPayoutScript = GetScriptForDestination(CBitcoinAddress(consensusParams.stage3DevelopmentFundAddress).Get());
-                CAmount devPayoutValue = (GetBlockSubsidy(nHeight, consensusParams, block.nTime) * consensusParams.stage3DevelopmentFundShare) / 100;
-                CScript communityPayoutScript = GetScriptForDestination(CBitcoinAddress(consensusParams.stage3CommunityFundAddress).Get());
-                CAmount communityPayoutValue = (GetBlockSubsidy(nHeight, consensusParams, block.nTime) * consensusParams.stage3CommunityFundShare) / 100;
+                const CTransaction &tx = *(block.vtx[0]);
+                CAmount blockReward = GetBlockSubsidy(nHeight, consensusParams, block.nTime);
 
-                bool devFound = false, communityFound = false;
-                for (const CTxOut &txout: block.vtx[0]->vout) {
-                    if (txout.scriptPubKey == devPayoutScript && txout.nValue == devPayoutValue)
-                        devFound = true;
-                    else if (txout.scriptPubKey == communityPayoutScript && txout.nValue == communityPayoutValue)
-                        communityFound = true;
+                FundPayment develpmentFundPayment = consensusParams.nDevelopmentFundPayment;
+                CAmount develpmentFundReward = develpmentFundPayment.getFundPaymentAmount(nHeight, blockReward);
+                int founderStartHeight = develpmentFundPayment.getStartBlock();
+                if(nHeight > founderStartHeight && develpmentFundReward && !develpmentFundPayment.IsBlockPayeeValid(tx, nHeight, blockReward)) {
+                    return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(), "Stage 3 Developer reward check failed");
                 }
-                if (!devFound || !communityFound)
-                    return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(), "Stage 3 developer/community reward check failed");
+
+                FundPayment communityFundPayment = consensusParams.nCommunityFundPayment;
+                CAmount communityFundReward = communityFundPayment.getFundPaymentAmount(nHeight, blockReward);
+                int communityStartHeight = communityFundPayment.getStartBlock();
+                if(nHeight > communityStartHeight && communityFundReward && !communityFundPayment.IsBlockPayeeValid(tx, nHeight, blockReward)) {
+                    return state.Invalid(false, state.GetRejectCode(), state.GetRejectReason(), "Stage 3 Community reward check failed");
+                }
             }
             else {
                 // "stage 2" interval between first and second halvings

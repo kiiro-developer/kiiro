@@ -5,6 +5,7 @@
 #include "deterministicmns.h"
 #include "providertx.h"
 #include "specialtx.h"
+#include "masternode-collaterals.h"
 
 #include "base58.h"
 #include "chainparams.h"
@@ -134,10 +135,12 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
     CTxDestination collateralTxDest;
     CKeyID keyForPayloadSig;
     COutPoint collateralOutpoint;
+    Coin coin;
+    CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
 
     if (!ptx.collateralOutpoint.hash.IsNull()) {
-        Coin coin;
-        if (!GetUTXOCoin(ptx.collateralOutpoint, coin) || coin.out.nValue != 1000 * COIN) {
+
+        if (!GetUTXOCoin(ptx.collateralOutpoint, coin) || !collaterals.isValidCollateral(coin.out.nValue)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-protx-collateral");
         }
 
@@ -156,7 +159,7 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
         if (ptx.collateralOutpoint.n >= tx.vout.size()) {
             return state.DoS(10, false, REJECT_INVALID, "bad-protx-collateral-index");
         }
-        if (tx.vout[ptx.collateralOutpoint.n].nValue != 1000 * COIN) {
+        if (!collaterals.isValidCollateral(tx.vout[ptx.collateralOutpoint.n].nValue)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-protx-collateral");
         }
 

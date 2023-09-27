@@ -10,6 +10,7 @@
 #include "rpc/server.h"
 #include "utilmoneystr.h"
 #include "validation.h"
+#include "masternode-collaterals.h"
 
 #ifdef ENABLE_WALLET
 #include "wallet/coincontrol.h"
@@ -413,7 +414,8 @@ UniValue protx_register(const JSONRPCRequest& request)
 
     size_t paramIdx = 1;
 
-    CAmount collateralAmount = 1000 * COIN;
+    CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
+    CAmount collateralAmount =  collaterals.getCollateral(chainActive.Height());
 
     CMutableTransaction tx;
     tx.nVersion = 3;

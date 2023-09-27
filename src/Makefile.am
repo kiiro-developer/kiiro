@@ -153,6 +153,7 @@ BITCOIN_CORE_H = \
   dbwrapper.h \
   limitedmap.h \
   threadinterrupt.h \
+  masternode-collateral.h \
   masternode-utils.h \
   mbstring.h \
   memusage.h \
@@ -247,6 +248,7 @@ BITCOIN_CORE_H = \
   messagesigner.h \
   masternode-payments.h \
   masternode-sync.h \
+  masternode-collateral.h \
   saltedhasher.h \
   unordered_lru_cache.h \
   llmq/quorums.h \
@@ -506,6 +508,7 @@ libbitcoin_consensus_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(PIC_FLAGS
 libbitcoin_consensus_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(PIC_FLAGS)
 libbitcoin_consensus_a_SOURCES = \
   amount.h \
+  fund_payment.h \  
   arith_uint256.cpp \
   arith_uint256.h \
   bls/bls.cpp \
@@ -568,8 +571,10 @@ libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
   amount.cpp \
+  fund_payment.cpp \
   base58.cpp \
   chainparams.cpp \
+  masternode-collaterals.cpp \
   coins.cpp \
   compressor.cpp \
   core_read.cpp \
