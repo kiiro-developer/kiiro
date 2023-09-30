@@ -1,11 +1,11 @@
-name: Continuous Integration on Master
+name: Continuous Integration on Main
 on:
   push:
-    branches:
-    - master
+    paths-ignore:
+      - '**/*.md'
   pull_request:
     branches:
-    - master
+    - main
 env:
   SOURCE_ARTIFACT: source
 jobs:
