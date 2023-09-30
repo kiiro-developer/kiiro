@@ -21,6 +21,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libboost-all-dev libdb-dev libdb++-dev libevent-dev bison
+    - name: Fix permissions
+      run: chmod -R +x *
     - name: Create Distribution Tarball
       run: |
         ./autogen.sh
@@ -60,8 +62,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-zmq
-    - name: Fix permissions
-      run: chmod -R +x *
     - name: Build Dependencies
       run: make -C depends -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
