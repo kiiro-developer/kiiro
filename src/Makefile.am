@@ -499,7 +499,6 @@ crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/progpow/lib/keccak/keccakf800.c \
   crypto/progpow/lib/support/attributes.h \
   crypto/progpow/helpers.hpp \
-  crypto/progpow/kiirocoinpow_test_vectors.hpp \
   crypto/progpow.h \
   crypto/progpow.cpp
 
