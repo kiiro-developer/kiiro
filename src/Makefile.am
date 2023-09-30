@@ -153,7 +153,6 @@ BITCOIN_CORE_H = \
   dbwrapper.h \
   limitedmap.h \
   threadinterrupt.h \
-  masternode-collateral.h \
   masternode-utils.h \
   mbstring.h \
   memusage.h \
