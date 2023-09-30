@@ -247,7 +247,7 @@ BITCOIN_CORE_H = \
   messagesigner.h \
   masternode-payments.h \
   masternode-sync.h \
-  masternode-collateral.h \
+  masternode-collaterals.h \
   saltedhasher.h \
   unordered_lru_cache.h \
   llmq/quorums.h \
