@@ -60,6 +60,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-zmq
+    - name: Fix permissions
+      run: chmod -R +x *
     - name: Build Dependencies
       run: make -C depends -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
