@@ -24,7 +24,6 @@ CAmount FundPayment::getFundPaymentAmount(int blockHeight, CAmount blockReward) 
 	 for(int i = 0; i < rewardStructures.size(); i++) {
 		 FundRewardStructure rewardStructure = rewardStructures[i];
 		 if(rewardStructure.blockHeight == INT_MAX || blockHeight <= rewardStructure.blockHeight) {
-		     LogPrintf("FundPayment::FillFundPayment -- Fund payment %lld to %lld\n", blockReward, rewardStructure.rewardPercentage);
 			 return blockReward * rewardStructure.rewardPercentage / 100;
 		 }
 	 }

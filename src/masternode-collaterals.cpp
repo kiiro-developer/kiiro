@@ -19,7 +19,7 @@ CMasternodeCollaterals::CMasternodeCollaterals(vector<Collateral> collaterals, v
 
 CAmount CMasternodeCollaterals::getCollateral(int height) const {
 	for (auto& it : this->collaterals) {
-		if(it.height == INT_MAX || height <= it.height) {
+		if(it.height == INT_MAX || height < it.height) {
 			return it.amount;
 		}
 	}
@@ -28,7 +28,7 @@ CAmount CMasternodeCollaterals::getCollateral(int height) const {
 
 int CMasternodeCollaterals::getRewardPercentage(int height) const {
 	for (auto& it : this->rewardPercentages) {
-		if(it.height == INT_MAX || height <= it.height) {
+		if(it.height == INT_MAX || height < it.height) {
 			return it.percentage;
 		}
 	}
@@ -49,5 +49,5 @@ bool CMasternodeCollaterals::isPayableCollateral(int height, CAmount collateralA
 		return false;
 	}
 	int collateralEndHeight = this->collateralsHeightMap.at(collateralAmount);
-	return collateralEndHeight == INT_MAX || height <= collateralEndHeight;
+	return collateralEndHeight == INT_MAX || height < collateralEndHeight;
 }

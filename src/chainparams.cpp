@@ -202,8 +202,12 @@ public:
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 30, "KWTco92wURX5Jwu3mMdWrs36j574meAvew");
         consensus.nCommunityFundPayment = FundPayment(rewardStructures, 30,"KDW8CeScVpWFzekvZm4f37qs5GxByEGSKE");
         consensus.nCollaterals = CMasternodeCollaterals(
-          { {64999, 1000 * COIN},
-            {INT_MAX, 5000 * COIN}
+          { {65000, 1000 * COIN}, // Block 0 - 64999 Collateral 1000
+            {115000, 2000 * COIN}, // Block 65000 - 114999 Collateral 2000
+            {165000, 2500 * COIN}, // Block 115000 - 164999 Collateral 2500
+            {215000, 3000 * COIN}, // Block 170000 - 214999 Collateral 3000
+            {265000, 3500 * COIN}, // Block 215000 - 264999 Collateral 3500
+            {INT_MAX, 4000 * COIN}  // Block 265000 - Infinity Collateral 4000
           },
           { {64999, 60}, {INT_MAX, 62} }
         );        
@@ -518,8 +522,9 @@ public:
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 1, "TWDxLLKsFp6qcV1LL4U2uNmW4HwMcapmMU");
         consensus.nCommunityFundPayment = FundPayment(rewardStructures, 1,"TCkC4uoErEyCB4MK3d6ouyJELoXnuyqe9L");
         consensus.nCollaterals = CMasternodeCollaterals(
-          { {200, 50 * COIN},
-            {INT_MAX, 100 * COIN}
+          { {250, 50 * COIN},
+            {450, 150 * COIN},
+            {INT_MAX, 200 * COIN}
           },
           { {200, 60}, {INT_MAX, 62} }
         );        
@@ -592,7 +597,7 @@ public:
         nMaxTipAge = 0x7fffffff; // allow mining on top of old blocks for testnet
 
         // evo znodes
-        consensus.DIP0003Height = 3340;
+        consensus.DIP0003Height = 100;
         consensus.DIP0003EnforcementHeight = 3800;
         consensus.DIP0003EnforcementHash.SetNull();
 
