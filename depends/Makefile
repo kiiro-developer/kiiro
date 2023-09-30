@@ -42,7 +42,6 @@ NO_UPNP ?=
 NO_NATPMP ?=
 MULTIPROCESS ?=
 FALLBACK_DOWNLOAD_PATH ?= https://bitcoincore.org/depends-sources
-FALLBACK_DOWNLOAD_PATH_ALTERNATIVE ?= https://kiirocoin.org/depends-sources
 
 BUILD = $(shell ./config.guess)
 HOST ?= $(BUILD)
