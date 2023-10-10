@@ -1099,12 +1099,12 @@ UniValue signMessage(CWallet * const pwallet, std::string strAddress, std::strin
 
 UniValue createConfigFile(std::string blsPrivateKey, std::string ip, std::string address) {
 
-	string fileName = get_current_dir() + "/" + address + "_kiirocoin.conf";
-	ofstream configFile(fileName);
-	string username = generateRandomString(10, false);
-	string password = generateRandomString(20, true);
-	configFile << "rpcuser=" << username << endl;
-	configFile << "rpcpassword=" << password << endl;
+	std::string fileName = get_current_dir() + "/" + address + "_kiirocoin.conf";
+	std::ofstream configFile(fileName);
+	std::string username = generateRandomString(10, false);
+	std::string password = generateRandomString(20, true);
+	configFile << "rpcuser=" << username << std::endl;
+	configFile << "rpcpassword=" << password << std::endl;
 	configFile << "rpcport=9000\n";
 	configFile << "rpcallowip=127.0.0.1\n";
 	configFile << "#----\n";
@@ -1115,8 +1115,8 @@ UniValue createConfigFile(std::string blsPrivateKey, std::string ip, std::string
 	configFile << "txindex=1\n";
 	configFile << "#----\n";
 	configFile << "znode=1\n";
-	configFile << "znodeblsprivkey=" << blsPrivateKey << endl;
-	configFile << "externalip=" << ip << endl;
+	configFile << "znodeblsprivkey=" << blsPrivateKey << std::endl;
+	configFile << "externalip=" << ip << std::endl;
 	configFile.flush();
 	configFile.close();
 	return fileName;
@@ -1440,6 +1440,7 @@ UniValue protx_diff(const JSONRPCRequest& request)
             "  register_fund     - Fund, create and send ProTx to network\n"
             "  register_prepare  - Create an unsigned ProTx\n"
             "  register_submit   - Sign and submit a ProTx\n"
+            "  quick_setup       - register_prepare, signmessage and register_submit in one command\n"
 #endif
             "  list              - List ProTxs\n"
             "  info              - Return information about a ProTx\n"

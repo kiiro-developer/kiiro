@@ -524,7 +524,7 @@ bool CDeterministicMNManager::ProcessBlock(const CBlock& block, const CBlockInde
     {
         LOCK(cs);
 
-        if (!BuildNewListFromBlock(block, pindex->pprev, _state, newList, true)) {
+        if (!BuildNewListFromBlock(block, pindex->pprev, _state, newList, false)) {
             return false;
         }
 
