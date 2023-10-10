@@ -8,11 +8,11 @@
 #include "masternode-collaterals.h"
 #include <limits.h>
 
-CMasternodeCollaterals::CMasternodeCollaterals(vector<Collateral> collaterals, vector<RewardPercentage> rewardPercentages) {
+CMasternodeCollaterals::CMasternodeCollaterals(std::vector<Collateral> collaterals, std::vector<RewardPercentage> rewardPercentages) {
 	this->collaterals = collaterals;
 	this->rewardPercentages = rewardPercentages;
 	for (auto& it : this->collaterals) {
-		collateralsHeightMap.insert(make_pair(it.amount, it.height));
+		collateralsHeightMap.insert(std::make_pair(it.amount, it.height));
 	}
 
 }

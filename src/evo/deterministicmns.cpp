@@ -4,7 +4,6 @@
 
 #include "deterministicmns.h"
 #include "specialtx.h"
-#include "masternode-collaterals.h"
 
 #include "base58.h"
 #include "chainparams.h"
@@ -19,8 +18,8 @@
 
 #include <univalue.h>
 
-static const std::string DB_LIST_SNAPSHOT = "dmn_S";
-static const std::string DB_LIST_DIFF = "dmn_D";
+static const std::string DB_LIST_SNAPSHOT = "dmn_S1";
+static const std::string DB_LIST_DIFF = "dmn_D1";
 
 CDeterministicMNManager* deterministicMNManager;
 
@@ -89,7 +88,11 @@ void CDeterministicMN::ToJson(UniValue& obj) const
     if (GetUTXOCoin(collateralOutpoint, coin)) {
         CTxDestination dest;
         if (ExtractDestination(coin.out.scriptPubKey, dest)) {
+    		CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
+    		int nHeight = chainActive.Tip() == NULL ? 0 : chainActive.Tip()->nHeight;
             obj.push_back(Pair("collateralAddress", CBitcoinAddress(dest).ToString()));
+            obj.push_back(Pair("collateralAmount", coin.out.nValue / COIN));
+            obj.push_back(Pair("needToUpgrade", !collaterals.isPayableCollateral(nHeight, coin.out.nValue)));
         }
     }
 
@@ -115,9 +118,16 @@ bool CDeterministicMNList::IsMNPoSeBanned(const uint256& proTxHash) const
     return IsMNPoSeBanned(*p);
 }
 
+bool CDeterministicMNList::IsMNValid(const CDeterministicMNCPtr& dmn, int height) const
+{
+	CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
+    return !IsMNPoSeBanned(dmn) && collaterals.isPayableCollateral(nHeight, dmn->pdmnState->nCollateralAmount);
+}
+
 bool CDeterministicMNList::IsMNValid(const CDeterministicMNCPtr& dmn) const
 {
-    return !IsMNPoSeBanned(dmn);
+    int nHeight = chainActive.Tip() == NULL ? 0 : chainActive.Tip()->nHeight;
+    return IsMNValid(dmn,nHeight);
 }
 
 bool CDeterministicMNList::IsMNPoSeBanned(const CDeterministicMNCPtr& dmn) const
@@ -174,15 +184,6 @@ CDeterministicMNCPtr CDeterministicMNList::GetMNByService(const CService& servic
     return GetUniquePropertyMN(service);
 }
 
-CDeterministicMNCPtr CDeterministicMNList::GetValidMNByService(const CService& service) const
-{
-    auto dmn = GetUniquePropertyMN(service);
-    if (dmn && !IsMNValid(dmn)) {
-        return nullptr;
-    }
-    return dmn;
-}
-
 CDeterministicMNCPtr CDeterministicMNList::GetMNByInternalId(uint64_t internalId) const
 {
     auto proTxHash = mnInternalIdMap.find(internalId);
@@ -230,7 +231,6 @@ CDeterministicMNCPtr CDeterministicMNList::GetMNPayee() const
             best = dmn;
         }
     });
-
     return best;
 }
 
@@ -250,7 +250,9 @@ std::vector<CDeterministicMNCPtr> CDeterministicMNList::GetProjectedMNPayees(int
         return CompareByLastPaid(a, b);
     });
 
-    result.resize(nCount);
+    if (result.size() > nCount) {
+        result.resize(nCount);
+    }
 
     return result;
 }
@@ -281,7 +283,7 @@ std::vector<std::pair<arith_uint256, CDeterministicMNCPtr>> CDeterministicMNList
 {
     std::vector<std::pair<arith_uint256, CDeterministicMNCPtr>> scores;
     scores.reserve(GetAllMNsCount());
-    ForEachMN(true, [&](const CDeterministicMNCPtr& dmn) {
+    ForEachMN(true, nHeight, [&](const CDeterministicMNCPtr& dmn) {
         if (dmn->pdmnState->confirmedHash.IsNull()) {
             // we only take confirmed MNs into account to avoid hash grinding on the ProRegTxHash to sneak MNs into a
             // future quorums
@@ -545,6 +547,7 @@ bool CDeterministicMNManager::ProcessBlock(const CBlock& block, const CBlockInde
             LogPrintf("CDeterministicMNManager::%s -- Wrote snapshot. nHeight=%d, mapCurMNs.allMNsCount=%d\n",
                 __func__, nHeight, newList.GetAllMNsCount());
         }
+        diff.nHeight = nHeight;
     }
 
     // Don't hold cs while calling signals
@@ -711,6 +714,13 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
 
             CDeterministicMNState dmnState = *dmn->pdmnState;
             dmnState.nRegisteredHeight = nHeight;
+
+            //set the collateral amount
+            if (proTx.collateralOutpoint.hash.IsNull()) {
+                dmnState.nCollateralAmount = tx.vout[proTx.collateralOutpoint.n].nValue;
+            } else{
+                dmnState.nCollateralAmount = coin.out.nValue;   
+            }
 
             if (proTx.addr == CService()) {
                 // start in banned pdmnState as we need to wait for a ProUpServTx
@@ -932,6 +942,7 @@ CDeterministicMNList CDeterministicMNManager::GetListForBlock(const CBlockIndex*
             break;
         }
 
+        diff.nHeight = pindex->nHeight;
         listDiff.emplace_front(pindex, std::move(diff));
         pindex = pindex->pprev;
     }
@@ -1014,6 +1025,7 @@ void CDeterministicMNManager::CleanupCache(int nHeight)
     }
 }
 
+// TODO this can be completely removed in a future version
 bool CDeterministicMNManager::UpgradeDiff(CDBBatch& batch, const CBlockIndex* pindexNext, const CDeterministicMNList& curMNList, CDeterministicMNList& newMNList)
 {
     CDataStream oldDiffData(SER_DISK, CLIENT_VERSION);
@@ -1063,67 +1075,84 @@ bool CDeterministicMNManager::UpgradeDiff(CDBBatch& batch, const CBlockIndex* pi
 }
 
 // TODO this can be completely removed in a future version
-void CDeterministicMNManager::UpgradeDBIfNeeded()
+bool CDeterministicMNManager::UpgradeDBIfNeeded()
 {
+    static const std::string DB_OLD_LIST_SNAPSHOT = "dmn_S";
+    static const std::string DB_OLD_LIST_DIFF = "dmn_D";
+    static const std::string DB_OLD_BEST_BLOCK = "b_b2";    
+
     LOCK(cs_main);
 
-    if (chainActive.Tip() == nullptr) {
-        return;
+    if (chainActive.Tip() == NULL) {
+        return true;
     }
 
     if (evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK)) {
-        return;
+        return true;
     }
 
     // Removing the old EVODB_BEST_BLOCK value early results in older version to crash immediately, even if the upgrade
     // process is cancelled in-between. But if the new version sees that the old EVODB_BEST_BLOCK is already removed,
     // then we must assume that the upgrade process was already running before but was interrupted.
-    if (chainActive.Height() > 1 && !evoDb.GetRawDB().Exists(std::string("b_b"))) {
+    if (chainActive.Height() > 1 && !evoDb.GetRawDB().Exists(DB_OLD_BEST_BLOCK)) {
         LogPrintf("CDeterministicMNManager::%s -- ERROR, upgrade process was interrupted and can't be continued. You need to reindex now.\n", __func__);
     }
-    evoDb.GetRawDB().Erase(std::string("b_b"));
+    evoDb.GetRawDB().Erase(DB_OLD_BEST_BLOCK);
 
-    if (chainActive.Height() < Params().GetConsensus().DIP0003Height) {
+    if (!IsDIP3Active(chainActive.Height())) {
         // not reached DIP3 height yet, so no upgrade needed
         auto dbTx = evoDb.BeginTransaction();
         evoDb.WriteBestBlock(chainActive.Tip()->GetBlockHash());
         dbTx->Commit();
-        return;
+        return true;
     }
-
-    LogPrintf("CDeterministicMNManager::%s -- upgrading DB to use compact diffs\n", __func__);
 
     CDBBatch batch(evoDb.GetRawDB());
 
-    CDeterministicMNList curMNList;
-    curMNList.SetHeight(Params().GetConsensus().DIP0003Height - 1);
-    curMNList.SetBlockHash(chainActive[Params().GetConsensus().DIP0003Height - 1]->GetBlockHash());
-
-    for (int nHeight = Params().GetConsensus().DIP0003Height; nHeight <= chainActive.Height(); nHeight++) {
+    for (int nHeight = Params().GetConsensus().DIP0003Height; nHeight < chainActive.Height()-1; nHeight++) {
         auto pindex = chainActive[nHeight];
 
-        CDeterministicMNList newMNList;
-        UpgradeDiff(batch, pindex, curMNList, newMNList);
-
-        if ((nHeight % SNAPSHOT_LIST_PERIOD) == 0) {
-            batch.Write(std::make_pair(DB_LIST_SNAPSHOT, pindex->GetBlockHash()), newMNList);
-            evoDb.GetRawDB().WriteBatch(batch);
-            batch.Clear();
+        // Unserialise CDeterministicMNListDiff using MN_TYPE_FORMAT and set MN state bls version to LEGACY_BLS_VERSION.
+        // It will be later written with format MN_CURRENT_FORMAT which includes the type field.
+        CDataStream diff_data(SER_DISK, CLIENT_VERSION);
+        if (!evoDb.GetRawDB().ReadDataStream(std::make_pair(DB_OLD_LIST_DIFF, pindex->GetBlockHash()), diff_data)) {
+            LogPrintf("CDeterministicMNManager::%s -- missing CDeterministicMNListDiff at height %d\n", __func__, nHeight);
+            return false;
         }
-
-        curMNList = newMNList;
-    }
+        CDeterministicMNListDiff mndiff;
+        mndiff.Unserialize(diff_data);
+        batch.Write(std::make_pair(DB_LIST_DIFF, pindex->GetBlockHash()), mndiff);
+        CDataStream snapshot_data(SER_DISK, CLIENT_VERSION);
+        if (!evoDb.GetRawDB().ReadDataStream(std::make_pair(DB_OLD_LIST_SNAPSHOT, pindex->GetBlockHash()), snapshot_data)) {
+            // it's ok, we write snapshots every DISK_SNAPSHOT_PERIOD blocks only
+            continue;
+        }
+        CDeterministicMNList mnList;
+        mnList.Unserialize(snapshot_data);
+        batch.Write(std::make_pair(DB_LIST_SNAPSHOT, pindex->GetBlockHash()), mnList);
+        evoDb.GetRawDB().WriteBatch(batch);
+        batch.Clear();
+        LogPrintf("CDeterministicMNManager::%s -- wrote snapshot at height %d\n", __func__, nHeight);
+    }    
 
     evoDb.GetRawDB().WriteBatch(batch);
 
-    LogPrintf("CDeterministicMNManager::%s -- done upgrading\n", __func__);
+    evoDb.GetRawDB().Erase(DB_OLD_LIST_DIFF);
+    evoDb.GetRawDB().Erase(DB_OLD_LIST_SNAPSHOT);
 
-    // Writing EVODB_BEST_BLOCK (which is b_b2 now) marks the DB as upgraded
-    auto dbTx = evoDb.BeginTransaction();
-    evoDb.WriteBestBlock(chainActive.Tip()->GetBlockHash());
-    dbTx->Commit();
+    LogPrintf("CDeterministicMNManager::%s -- done cleaning old data\n", __func__);
 
     evoDb.GetRawDB().CompactFull();
+
+    LogPrintf("CDeterministicMNManager::%s -- done compacting database\n", __func__);
+
+    // flush it to disk
+    if (!evoDb.CommitRootTransaction()) {
+        LogPrintf("CDeterministicMNManager::%s -- failed to commit to evoDB\n", __func__);
+        return false;
+    }
+
+    return true;
 }
 
 bool CDeterministicMNManager::IsDIP3Active(int height)

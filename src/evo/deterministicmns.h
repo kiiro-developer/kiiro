@@ -42,6 +42,8 @@ public:
     // sha256(proTxHash, confirmedHash) to speed up quorum calculations
     // please note that this is NOT a double-sha256 hash
     uint256 confirmedHashWithProRegTxHash;
+    //collateral amount used in quorum calculations
+    CAmount nCollateralAmount;
 
     CKeyID keyIDOwner;
     CBLSLazyPublicKey pubKeyOperator;
@@ -85,6 +87,7 @@ public:
         READWRITE(addr);
         READWRITE(scriptPayout);
         READWRITE(scriptOperatorPayout);
+        READWRITE(nCollateralAmount);
     }
 
     void ResetOperatorFields()
@@ -134,6 +137,7 @@ public:
         Field_addr                              = 0x0800,
         Field_scriptPayout                      = 0x1000,
         Field_scriptOperatorPayout              = 0x2000,
+        Field_nCollateralAmount                 = 0x4000,
     };
 
 #define DMN_STATE_DIFF_ALL_FIELDS \
@@ -150,7 +154,9 @@ public:
     DMN_STATE_DIFF_LINE(keyIDVoting) \
     DMN_STATE_DIFF_LINE(addr) \
     DMN_STATE_DIFF_LINE(scriptPayout) \
-    DMN_STATE_DIFF_LINE(scriptOperatorPayout)
+    DMN_STATE_DIFF_LINE(scriptOperatorPayout) \
+    DMN_STATE_DIFF_LINE(nCollateralAmount)
+    
 
 public:
     uint32_t fields{0};
@@ -348,6 +354,16 @@ public:
     }
 
     template <typename Callback>
+    void ForEachMN(bool onlyValid, int height, Callback&& cb) const
+    {
+        for (const auto& p : mnMap) {
+            if (!onlyValid || IsMNValid(p.second, height)) {
+                cb(p.second);
+            }
+        }
+    }
+
+    template <typename Callback>
     void ForEachMN(bool onlyValid, Callback&& cb) const
     {
         for (const auto& p : mnMap) {
@@ -385,6 +401,7 @@ public:
 
     bool IsMNValid(const uint256& proTxHash) const;
     bool IsMNPoSeBanned(const uint256& proTxHash) const;
+    bool IsMNValid(const CDeterministicMNCPtr& dmn, int height) const;
     bool IsMNValid(const CDeterministicMNCPtr& dmn) const;
     bool IsMNPoSeBanned(const CDeterministicMNCPtr& dmn) const;
 
@@ -410,7 +427,6 @@ public:
     CDeterministicMNCPtr GetMNByCollateral(const COutPoint& collateralOutpoint) const;
     CDeterministicMNCPtr GetValidMNByCollateral(const COutPoint& collateralOutpoint) const;
     CDeterministicMNCPtr GetMNByService(const CService& service) const;
-    CDeterministicMNCPtr GetValidMNByService(const CService& service) const;
     CDeterministicMNCPtr GetMNByInternalId(uint64_t internalId) const;
     CDeterministicMNCPtr GetMNPayee() const;
 
@@ -541,6 +557,8 @@ private:
 class CDeterministicMNListDiff
 {
 public:
+    int nHeight{-1}; //memory only
+
     std::vector<CDeterministicMNCPtr> addedMNs;
     // keys are all relating to the internalId of MNs
     std::map<uint64_t, CDeterministicMNStateDiff> updatedMNs;
@@ -661,7 +679,7 @@ public:
 public:
     // TODO these can all be removed in a future version
     bool UpgradeDiff(CDBBatch& batch, const CBlockIndex* pindexNext, const CDeterministicMNList& curMNList, CDeterministicMNList& newMNList);
-    void UpgradeDBIfNeeded();
+    bool UpgradeDBIfNeeded();
     static bool IsDIP3Active(int height);
 
 private:

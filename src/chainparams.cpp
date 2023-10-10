@@ -196,7 +196,7 @@ public:
         consensus.stage3DevelopmentFundAddress = "KWTco92wURX5Jwu3mMdWrs36j574meAvew";
         consensus.stage3CommunityFundAddress = "KDW8CeScVpWFzekvZm4f37qs5GxByEGSKE";
 
-        vector<FundRewardStructure> rewardStructures = { {64999, 10}, // 10%
+        std::vector<FundRewardStructure> rewardStructures = { {65000, 10}, // 10%
                                                          {INT_MAX, 9} // 9% dev/community fee forever
                                                        };
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 30, "KWTco92wURX5Jwu3mMdWrs36j574meAvew");
@@ -206,8 +206,7 @@ public:
             {115000, 2000 * COIN}, // Block 65000 - 114999 Collateral 2000
             {165000, 2500 * COIN}, // Block 115000 - 164999 Collateral 2500
             {215000, 3000 * COIN}, // Block 170000 - 214999 Collateral 3000
-            {265000, 3500 * COIN}, // Block 215000 - 264999 Collateral 3500
-            {INT_MAX, 4000 * COIN}  // Block 265000 - Infinity Collateral 4000
+            {INT_MAX, 4000 * COIN}  // Block 215000 - Infinity Collateral 4000
           },
           { {64999, 60}, {INT_MAX, 62} }
         );        
@@ -516,7 +515,7 @@ public:
         consensus.stage3DevelopmentFundAddress = "TWDxLLKsFp6qcV1LL4U2uNmW4HwMcapmMU";
         consensus.stage3CommunityFundAddress = "TCkC4uoErEyCB4MK3d6ouyJELoXnuyqe9L";
 
-        vector<FundRewardStructure> rewardStructures = { {200, 10}, // 10%
+        std::vector<FundRewardStructure> rewardStructures = { {250, 10}, // 10%
                                                          {INT_MAX, 9} // 9% dev/community fee forever
                                                        };
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 1, "TWDxLLKsFp6qcV1LL4U2uNmW4HwMcapmMU");
@@ -524,9 +523,10 @@ public:
         consensus.nCollaterals = CMasternodeCollaterals(
           { {250, 50 * COIN},
             {450, 150 * COIN},
-            {INT_MAX, 200 * COIN}
+            {650, 250 * COIN},
+            {INT_MAX, 400 * COIN}
           },
-          { {200, 60}, {INT_MAX, 62} }
+          { {250, 60}, {INT_MAX, 62} }
         );        
 
         consensus.nStartBlacklist = 0;
@@ -598,10 +598,10 @@ public:
 
         // evo znodes
         consensus.DIP0003Height = 100;
-        consensus.DIP0003EnforcementHeight = 3800;
+        consensus.DIP0003EnforcementHeight = 101;
         consensus.DIP0003EnforcementHash.SetNull();
 
-        consensus.DIP0008Height = 25000;
+        consensus.DIP0008Height = 103;
         consensus.nEvoZnodeMinimumConfirmations = 0;
 
         // long living quorum params
@@ -794,7 +794,7 @@ public:
         consensus.stage3DevelopmentFundAddress = "TepVKkmUo1N6sazuM2wWwV7aiG4m1BUShU";
         consensus.stage3CommunityFundAddress = "TZpbhfvQE61USHsxd55XdPpWBqu3SXB1EP";
 
-        vector<FundRewardStructure> rewardStructures = { {200, 10}, // 10%
+        std::vector<FundRewardStructure> rewardStructures = { {200, 10}, // 10%
                                                          {INT_MAX, 9} // 9% dev/community fee forever
                                                        };
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 30, "TepVKkmUo1N6sazuM2wWwV7aiG4m1BUShU");
@@ -804,7 +804,7 @@ public:
             {INT_MAX, 5000 * COIN}
           },
           { {200, 60}, {INT_MAX, 62} }
-        );        
+        );
 
         consensus.nStartBlacklist = 0;
         consensus.nStartDuplicationCheck = 0;
@@ -1035,7 +1035,7 @@ public:
         consensus.stage3DevelopmentFundAddress = "TGEGf26GwyUBE2P2o2beBAfE9Y438dCp5t";  // private key cMrz8Df36VR9TvZjtvSqLPhUQR7pcpkXRXaLNYUxfkKsRuCzHpAN
         consensus.stage3CommunityFundAddress = "TJmPzeJF4DECrBwUftc265U7rTPxKmpa4F";  // private key cTyPWqTMM1CgT5qy3K3LSgC1H6Q2RHvnXZHvjWtKB4vq9qXqKmMu
 
-        vector<FundRewardStructure> rewardStructures = { {200, 10}, // 10%
+        std::vector<FundRewardStructure> rewardStructures = { {200, 10}, // 10%
                                                          {INT_MAX, 9} // 9% dev/community fee forever
                                                        };
         consensus.nDevelopmentFundPayment = FundPayment(rewardStructures, 1, "TGEGf26GwyUBE2P2o2beBAfE9Y438dCp5t");

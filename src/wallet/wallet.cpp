@@ -3415,11 +3415,9 @@ CAmount CWallet::GetImmatureWatchOnlyBalance() const
 
 void CWallet::AvailableCoins(std::vector <COutput> &vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl, bool fIncludeZeroValue, bool fUseInstantSend) const
 {
-    CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
-    CAmount collateralAmount =  collaterals.getCollateral(chainActive.Height());
-
     vCoins.clear();
     CoinType nCoinType = coinControl ? coinControl->nCoinType : CoinType::ALL_COINS;
+    CMasternodeCollaterals collaterals = Params().GetConsensus().nCollaterals;
 
     {
         LOCK2(cs_main, cs_wallet);
@@ -3492,11 +3490,11 @@ void CWallet::AvailableCoins(std::vector <COutput> &vCoins, bool fOnlyConfirmed,
                             || pcoin->tx->vout[i].scriptPubKey.IsLelantusMint()
                             || pcoin->tx->vout[i].scriptPubKey.IsLelantusJMint());
                 } else if (nCoinType == CoinType::ONLY_NOTCOLLATERALIFMN) {
-                    found = !(fMasternodeMode && pcoin->tx->vout[i].nValue == collateralAmount);
+                    found = !(fMasternodeMode && collaterals.isValidCollateral(pcoin->tx->vout[i].nValue));
                 } else if (nCoinType == CoinType::ONLY_NONDENOMINATED_NOTCOLATERALRIFMN) {
-                    if (fMasternodeMode) found = pcoin->tx->vout[i].nValue != collateralAmount; // do not use Hot MN funds
+                    if (fMasternodeMode) found = !collaterals.isValidCollateral(pcoin->tx->vout[i].nValue); // do not use Hot MN funds
 		        } else if (nCoinType == CoinType::ONLY_COLLATERAL) {
-                    found = pcoin->tx->vout[i].nValue == collateralAmount;
+                    found = collaterals.isValidCollateral(pcoin->tx->vout[i].nValue);
                 } else {
                     found = true;
                 }

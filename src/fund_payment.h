@@ -17,7 +17,6 @@
 #include "primitives/transaction.h"
 #include "script/standard.h"
 #include <limits.h>
-using namespace std;
 
 struct FundRewardStructure {
 	int blockHeight;
@@ -26,7 +25,7 @@ struct FundRewardStructure {
 
 class FundPayment {
 public:
-	FundPayment(vector<FundRewardStructure> rewardStructures = {}, int startBlock = 0, const string &address = "") {
+	FundPayment(std::vector<FundRewardStructure> rewardStructures = {}, int startBlock = 0, const std::string &address = "") {
 		this->fundAddress = address;
 		this->startBlock = startBlock;
 		this->rewardStructures = rewardStructures;
@@ -37,9 +36,9 @@ public:
 	bool IsBlockPayeeValid(const CTransaction& txNew, const int height, const CAmount blockReward);
 	int getStartBlock() {return this->startBlock;}
 private:
-	string fundAddress;
+	std::string fundAddress;
 	int startBlock;
-	vector<FundRewardStructure> rewardStructures;
+	std::vector<FundRewardStructure> rewardStructures;
 };
 
 

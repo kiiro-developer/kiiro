@@ -9,7 +9,6 @@
 #include "amount.h"
 #include <vector>
 #include <unordered_map>
-using namespace std;
 
 #ifndef KIIRO_MASTERNODE_COLLATERALS_H_
 #define KIIRO_MASTERNODE_COLLATERALS_H_
@@ -26,12 +25,12 @@ struct RewardPercentage {
 
 class CMasternodeCollaterals {
 protected:
-	vector<Collateral> collaterals;
-	vector<RewardPercentage> rewardPercentages;
-	unordered_map<CAmount, int> collateralsHeightMap;
+	std::vector<Collateral> collaterals;
+	std::vector<RewardPercentage> rewardPercentages;
+	std::unordered_map<CAmount, int> collateralsHeightMap;
 
 public:
-	CMasternodeCollaterals(vector<Collateral> collaterals = {}, vector<RewardPercentage> rewardPercentages = {});
+	CMasternodeCollaterals(std::vector<Collateral> collaterals = {}, std::vector<RewardPercentage> rewardPercentages = {});
 	CAmount getCollateral(int height) const;
 	bool isValidCollateral(CAmount collateralAmount) const;
 	bool isPayableCollateral(int height,CAmount collateralAmount) const;
