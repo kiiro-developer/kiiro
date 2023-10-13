@@ -15,6 +15,7 @@ QDialog {
 
 QFrame {
     background-color: transparent;
+    border: none;
     font: 12pt 'Source Sans Pro';
 }
 
@@ -453,7 +454,7 @@ QHeaderView::section {
     padding-bottom: 2px;
     background-color: #FCB040;
     border-color: #f4f4f4;
-    color: #f4f4f4;
+    color: #303030;
     font: 12pt 'Source Sans Pro';
 }
 
@@ -565,7 +566,7 @@ QProgressBar > QToolButton > QLabel {
 QPushButton {
     background-color: #FCB040;
     border: 0;
-    border-radius: 8px;
+    border-radius: 4px;
     color: #1D1D1D;
     min-height: 26px;
     min-width: 10em;
@@ -591,7 +592,7 @@ QPushButton:pressed {
 
 QPushButton:disabled {
     background-color: #cfcccc;
-    border-color: #cfcccc;
+    border-color: transparent;
     color: #1D1D1D;
 }
 
@@ -788,8 +789,15 @@ QStatusBar {
     color: #cfcccc;
 }
 
+QStatusBar::item {
+    margin: 5px;
+    border: 0;
+    background: transparent;
+}
+
 QStatusBar QLabel {
     margin-right: 5px;
+    border: none;
     font: 12pt 'Source Sans Pro';
 }
 
@@ -1292,9 +1300,9 @@ QWidget#bgWidget {
 }
 
 QWidget#bgWidget .QLabel#warningIcon {
-    background-color: #303030;
     margin-left: 10px;
     margin-right: 10px;
+    background-color: transparent;
     height: fit-content;
 }
 
@@ -1843,8 +1851,16 @@ TransactionView QComboBox {
     margin-top: 15px;
 }
 
+QPushButton#buttonVersionUpdate {
+    background-color: #38761d;
+}
+
+QPushButton#buttonVersionUpdate:hover {
+    background-color: #5e8c41
+}
+
 /* overlay warning icon */
 QPushButton#warningIcon {
-    background-color: #303030;
-    height: 33px;
+    background-color: transparent;
+    height: 43px;
 }

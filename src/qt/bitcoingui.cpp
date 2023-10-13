@@ -70,6 +70,7 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
+#include <QSslSocket>
 #include <QTimer>
 #include <QToolBar>
 #include <QVBoxLayout>
@@ -78,7 +79,7 @@
 #include <QTextDocument>
 #include <QUrl>
 #else
-#include <tinyformat.h>
+#include <univalue/include/univalue.h>
 #include <QUrlQuery>
 #include <QDesktopServices>
 #endif
@@ -276,6 +277,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     QFrame *frameVersionUpdate = new QFrame();
     frameVersionUpdate->setContentsMargins(0,0,0,0);
     frameVersionUpdate->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    frameVersionUpdate->setStyleSheet("{border:none;}");
     QHBoxLayout *frameVersionUpdateLayout = new QHBoxLayout(frameVersionUpdate);
     frameVersionUpdateLayout->setContentsMargins(3,0,3,0);
     frameVersionUpdateLayout->setSpacing(3);
@@ -284,12 +286,10 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     // Create the button, make "this" the parent
     buttonVersionUpdate = new QPushButton("New Wallet Version", this);
     buttonVersionUpdate->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    buttonVersionUpdate->setObjectName("buttonVersionUpdate");
     frameVersionUpdateLayout->addWidget(buttonVersionUpdate);
     frameVersionUpdateLayout->addStretch();
     buttonVersionUpdate->hide();
-
-    // Connect button signal to appropriate slot
-    connect(buttonVersionUpdate, &QPushButton::released, this, &BitcoinGUI::versionUpdateClicked);
 
     // Progress bar and label for blocks download
     progressBarLabel = new QLabel();
@@ -301,11 +301,11 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
     // Override style sheet for progress bar for styles that have a segmented progress bar,
     // as they make the text unreadable (workaround for issue #1071)
     // See https://qt-project.org/doc/qt-4.8/gallery.html
-    QString curStyle = QApplication::style()->metaObject()->className();
-    if(curStyle == "QWindowsStyle" || curStyle == "QWindowsXPStyle")
-    {
-        progressBar->setStyleSheet("QProgressBar { background-color: #e8e8e8; border: 1px solid grey; border-radius: 7px; padding: 1px; text-align: center; } QProgressBar::chunk { background: QLinearGradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #FF8000, stop: 1 orange); border-radius: 7px; margin: 0px; }");
-    }
+    // QString curStyle = QApplication::style()->metaObject()->className();
+    // if(curStyle == "QWindowsStyle" || curStyle == "QWindowsXPStyle")
+    // {
+    //     progressBar->setStyleSheet("QProgressBar { background-color: #e8e8e8; border: 1px solid grey; border-radius: 7px; padding: 1px; text-align: center; } QProgressBar::chunk { background: QLinearGradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #FF8000, stop: 1 orange); border-radius: 7px; margin: 0px; }");
+    // }
 
     statusBar()->addWidget(progressBarLabel);
     statusBar()->addWidget(progressBar);
@@ -321,6 +321,9 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle *
 
     // Subscribe to notifications from core
     subscribeToCoreSignals();
+
+    // Connect button signal to appropriate slot
+    connect(buttonVersionUpdate, &QPushButton::released, this, &BitcoinGUI::versionUpdateClicked);
 
     connect(connectionsControl, &GUIUtil::ClickableLabel::clicked, this, &BitcoinGUI::toggleNetworkActive);
 
@@ -1634,8 +1637,10 @@ void UnitDisplayStatusBarControl::onMenuSelection(QAction* action)
 
 void BitcoinGUI::getLatestVersionReplyFinished(QNetworkReply *reply) {
     
-    if(reply->error() != QNetworkReply::NoError)
+    if(reply->error() != QNetworkReply::NoError) {
+        LogPrintf("Error with Github version: %s\n", reply->errorString().toStdString());
         return;
+    }
 
     QByteArray answer = reply->readAll();
 
@@ -1702,8 +1707,8 @@ void BitcoinGUI::getLatestVersionReplyFinished(QNetworkReply *reply) {
                 buttonVersionUpdate->setToolTip(QString::fromStdString(strprintf("Currently running: %s\nLatest version: %s", FormatFullVersion(),
                                                                                 latestVersion)));
 
-                // Only display the message on startup to the user around 1/2 of the time
-                //if (GetRandInt(2) == 1) {
+                // Only display the message on startup to the user around 1/3 of the time
+                if (GetRandInt(3) == 1) {
                     bool fRet = uiInterface.ThreadSafeQuestion(
                             strprintf("\nCurrently running: %s\nLatest version: %s", FormatFullVersion(),
                                         latestVersion) + "\n\nWould you like to visit the releases page?",
@@ -1714,7 +1719,7 @@ void BitcoinGUI::getLatestVersionReplyFinished(QNetworkReply *reply) {
                         QString link = "https://github.com/kiirocoin/kiiro/releases";
                         QDesktopServices::openUrl(QUrl(link));
                     }
-                //}
+                }
                 buttonVersionUpdate->show();
             }
         }
